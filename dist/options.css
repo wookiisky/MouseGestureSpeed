@@ -1,0 +1,143 @@
+:root {
+  color-scheme: light dark;
+  font-family: "Segoe UI", sans-serif;
+}
+
+body {
+  margin: 0;
+  background-color: #f5f5f5;
+  color: #222;
+}
+
+#app {
+  padding: 24px;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+main {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+button {
+  cursor: pointer;
+}
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.toolbar h2 {
+  margin: 0;
+  font-size: 18px;
+  flex: 1;
+}
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  min-width: 200px;
+  padding: 12px 16px;
+  background-color: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  border-radius: 4px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.toast.visible {
+  opacity: 1;
+}
+
+.toast.error {
+  background-color: #b00020;
+}
+
+.gesture-list {
+  background-color: #fff;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gesture-list-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gesture-item {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background-color: #f8f8f8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.gesture-item:hover {
+  border-color: #c7dcf6;
+}
+
+.gesture-item.active {
+  border-color: #0078d4;
+  background-color: #e6f0fb;
+}
+
+.gesture-editor {
+  background-color: #fff;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+textarea {
+  width: 100%;
+  min-height: 80px;
+}
+
+select,
+input,
+textarea {
+  font-size: 14px;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+.empty-state {
+  font-style: italic;
+  color: #666;
+}

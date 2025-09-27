@@ -1,0 +1,13 @@
+.claude
+.cursor
+GEMINI.md
+CLAUDE.md
+AGENTS.md
+.roomodes
+
+# YoYo AI version control directory
+.yoyo/
+.vscode/settings.json
+.idea
+.dist
+node_modules

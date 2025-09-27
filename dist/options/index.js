@@ -1,0 +1,442 @@
+import { configStateService } from "../common/config-state-service.js";
+import { VALID_ACTIONS, VALID_DIRECTIONS, mergeGestureConfigs, normalizeSequence, validateGestureConfig } from "../common/config-validation.js";
+import { createLogger } from "../common/log.js";
+const logger = createLogger("OptionsPage");
+const state = {
+    currentConfig: null,
+    defaultConfig: null,
+    selectedIndex: null
+};
+const elements = {
+    gestureList: null,
+    editor: null,
+    delayInput: null,
+    minDistanceInput: null,
+    saveButton: null,
+    restoreButton: null,
+    exportButton: null,
+    importButton: null,
+    importInput: null,
+    addGestureButton: null,
+    deleteGestureButton: null
+};
+let toastTimer = null;
+// Shows toast message to the user.
+const showToast = (message, isError = false) => {
+    const toast = document.getElementById("toast");
+    if (!toast) {
+        return;
+    }
+    toast.textContent = message;
+    toast.classList.toggle("visible", true);
+    toast.classList.toggle("error", isError);
+    if (toastTimer) {
+        window.clearTimeout(toastTimer);
+    }
+    toastTimer = window.setTimeout(() => {
+        toast.classList.toggle("visible", false);
+    }, 2500);
+};
+// Clones gesture configuration deeply.
+const cloneConfig = (config) => JSON.parse(JSON.stringify(config));
+// Loads default configuration from bundled JSON.
+const loadDefaultConfig = async () => {
+    const url = chrome.runtime.getURL("config/gestures.json");
+    logger.info("Loading default config for options", url);
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`Failed to load default config: ${response.status}`);
+    }
+    const json = (await response.json());
+    const normalized = {
+        defaultDelay: json.defaultDelay,
+        minMoveDistance: json.minMoveDistance,
+        gestures: json.gestures.map((gesture) => ({
+            ...gesture,
+            sequence: normalizeSequence(gesture.sequence)
+        }))
+    };
+    validateGestureConfig(normalized);
+    return normalized;
+};
+// Builds static layout structure.
+const buildLayout = () => {
+    const app = document.getElementById("app");
+    if (!app) {
+        throw new Error("Options root element not found");
+    }
+    app.innerHTML = "";
+    const header = document.createElement("header");
+    const title = document.createElement("h1");
+    title.textContent = "Simple Mouse Gesture";
+    header.appendChild(title);
+    const toolbar = document.createElement("div");
+    toolbar.className = "toolbar";
+    elements.saveButton = document.createElement("button");
+    elements.saveButton.textContent = "Save";
+    elements.restoreButton = document.createElement("button");
+    elements.restoreButton.textContent = "Restore Default";
+    elements.exportButton = document.createElement("button");
+    elements.exportButton.textContent = "Export";
+    elements.importButton = document.createElement("button");
+    elements.importButton.textContent = "Import";
+    elements.importInput = document.createElement("input");
+    elements.importInput.type = "file";
+    elements.importInput.accept = "application/json";
+    elements.importInput.style.display = "none";
+    toolbar.append(elements.saveButton, elements.restoreButton, elements.exportButton, elements.importButton, elements.importInput);
+    header.appendChild(toolbar);
+    app.appendChild(header);
+    const main = document.createElement("main");
+    const listSection = document.createElement("section");
+    listSection.className = "gesture-list";
+    const listHeader = document.createElement("div");
+    listHeader.className = "toolbar";
+    const listTitle = document.createElement("h2");
+    listTitle.textContent = "Gestures";
+    elements.addGestureButton = document.createElement("button");
+    elements.addGestureButton.textContent = "Add";
+    listHeader.append(listTitle, elements.addGestureButton);
+    listSection.appendChild(listHeader);
+    elements.gestureList = document.createElement("div");
+    elements.gestureList.className = "gesture-list-items";
+    listSection.appendChild(elements.gestureList);
+    elements.editor = document.createElement("section");
+    elements.editor.className = "gesture-editor";
+    main.append(listSection, elements.editor);
+    app.appendChild(main);
+};
+// Renders gesture list items.
+const renderGestureList = () => {
+    if (!elements.gestureList || !state.currentConfig) {
+        return;
+    }
+    elements.gestureList.innerHTML = "";
+    if (state.currentConfig.gestures.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "empty-state";
+        empty.textContent = "No gestures configured.";
+        elements.gestureList.appendChild(empty);
+        state.selectedIndex = null;
+        renderGestureEditor();
+        return;
+    }
+    state.currentConfig.gestures.forEach((gesture, index) => {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = "gesture-item";
+        if (state.selectedIndex === index) {
+            item.classList.add("active");
+        }
+        const label = document.createElement("span");
+        label.textContent = gesture.sequence.join(" > ");
+        const action = document.createElement("span");
+        action.textContent = gesture.action;
+        item.append(label, action);
+        item.addEventListener("click", () => {
+            state.selectedIndex = index;
+            renderGestureList();
+        });
+        elements.gestureList?.appendChild(item);
+    });
+    if (state.selectedIndex === null) {
+        state.selectedIndex = 0;
+    }
+    renderGestureEditor();
+};
+// Parses gesture sequence input.
+const parseSequence = (value) => {
+    const parts = value
+        .split(/[,>\n]/)
+        .map((part) => part.trim())
+        .filter(Boolean);
+    if (parts.length === 0) {
+        return [];
+    }
+    const normalized = normalizeSequence(parts);
+    for (const direction of normalized) {
+        if (!VALID_DIRECTIONS.includes(direction)) {
+            throw new Error(`Invalid direction ${direction}`);
+        }
+    }
+    return normalized;
+};
+// Updates selected gesture in state.
+const updateSelectedGesture = (updater) => {
+    if (!state.currentConfig || state.selectedIndex === null) {
+        return;
+    }
+    const gestures = [...state.currentConfig.gestures];
+    gestures[state.selectedIndex] = updater(gestures[state.selectedIndex]);
+    state.currentConfig = {
+        ...state.currentConfig,
+        gestures
+    };
+    renderGestureList();
+};
+// Renders gesture editor panel.
+const renderGestureEditor = () => {
+    const editor = elements.editor;
+    if (!editor) {
+        return;
+    }
+    editor.innerHTML = "";
+    if (!state.currentConfig) {
+        const loading = document.createElement("p");
+        loading.textContent = "Loading configuration...";
+        editor.appendChild(loading);
+        return;
+    }
+    const config = state.currentConfig;
+    const globalFields = document.createElement("div");
+    globalFields.className = "field";
+    const delayLabel = document.createElement("label");
+    delayLabel.textContent = "Min gesture duration (ms)";
+    elements.delayInput = document.createElement("input");
+    elements.delayInput.type = "number";
+    elements.delayInput.min = "0";
+    elements.delayInput.value = String(config.defaultDelay);
+    elements.delayInput.addEventListener("change", () => {
+        const value = Number(elements.delayInput?.value ?? config.defaultDelay);
+        state.currentConfig = {
+            ...state.currentConfig,
+            defaultDelay: Number.isFinite(value) ? value : config.defaultDelay
+        };
+    });
+    const minDistanceLabel = document.createElement("label");
+    minDistanceLabel.textContent = "Min move distance (px)";
+    elements.minDistanceInput = document.createElement("input");
+    elements.minDistanceInput.type = "number";
+    elements.minDistanceInput.min = "1";
+    elements.minDistanceInput.value = String(config.minMoveDistance);
+    elements.minDistanceInput.addEventListener("change", () => {
+        const value = Number(elements.minDistanceInput?.value ?? config.minMoveDistance);
+        state.currentConfig = {
+            ...state.currentConfig,
+            minMoveDistance: Number.isFinite(value) ? value : config.minMoveDistance
+        };
+    });
+    globalFields.append(delayLabel, elements.delayInput, minDistanceLabel, elements.minDistanceInput);
+    editor.appendChild(globalFields);
+    if (state.selectedIndex === null) {
+        const empty = document.createElement("p");
+        empty.className = "empty-state";
+        empty.textContent = "Select a gesture to edit.";
+        editor.appendChild(empty);
+        return;
+    }
+    const gesture = config.gestures[state.selectedIndex];
+    const sequenceField = document.createElement("div");
+    sequenceField.className = "field";
+    const sequenceLabel = document.createElement("label");
+    sequenceLabel.textContent = "Gesture sequence";
+    const sequenceInput = document.createElement("textarea");
+    sequenceInput.value = gesture.sequence.join(" > ");
+    sequenceInput.addEventListener("change", () => {
+        try {
+            const parsed = parseSequence(sequenceInput.value);
+            updateSelectedGesture((current) => ({ ...current, sequence: parsed }));
+        }
+        catch (error) {
+            if (error instanceof Error) {
+                showToast(error.message, true);
+                logger.error("Sequence parse failed", error);
+            }
+            sequenceInput.value = gesture.sequence.join(" > ");
+        }
+    });
+    const directionsToolbar = document.createElement("div");
+    directionsToolbar.className = "toolbar";
+    VALID_DIRECTIONS.filter((direction) => direction !== "RIGHT_BUTTON").forEach((direction) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = direction;
+        button.addEventListener("click", () => {
+            updateSelectedGesture((current) => ({
+                ...current,
+                sequence: [...current.sequence, direction]
+            }));
+        });
+        directionsToolbar.appendChild(button);
+    });
+    const mixedButton = document.createElement("button");
+    mixedButton.type = "button";
+    mixedButton.textContent = "RIGHT_BUTTON + LEFT_CLICK";
+    mixedButton.addEventListener("click", () => {
+        updateSelectedGesture((current) => ({
+            ...current,
+            sequence: ["RIGHT_BUTTON", "LEFT_CLICK"]
+        }));
+    });
+    directionsToolbar.appendChild(mixedButton);
+    sequenceField.append(sequenceLabel, sequenceInput, directionsToolbar);
+    editor.appendChild(sequenceField);
+    const actionField = document.createElement("div");
+    actionField.className = "field";
+    const actionLabel = document.createElement("label");
+    actionLabel.textContent = "Action";
+    const actionSelect = document.createElement("select");
+    VALID_ACTIONS.forEach((action) => {
+        const option = document.createElement("option");
+        option.value = action;
+        option.textContent = action;
+        if (gesture.action === action) {
+            option.selected = true;
+        }
+        actionSelect.appendChild(option);
+    });
+    actionSelect.addEventListener("change", () => {
+        const value = actionSelect.value;
+        updateSelectedGesture((current) => ({ ...current, action: value }));
+    });
+    actionField.append(actionLabel, actionSelect);
+    editor.appendChild(actionField);
+    elements.deleteGestureButton = document.createElement("button");
+    elements.deleteGestureButton.type = "button";
+    elements.deleteGestureButton.textContent = "Delete Gesture";
+    elements.deleteGestureButton.addEventListener("click", () => {
+        if (!state.currentConfig) {
+            return;
+        }
+        const gestures = state.currentConfig.gestures.filter((_, index) => index !== state.selectedIndex);
+        state.currentConfig = { ...state.currentConfig, gestures };
+        state.selectedIndex = gestures.length > 0 ? Math.min(state.selectedIndex, gestures.length - 1) : null;
+        renderGestureList();
+    });
+    editor.appendChild(elements.deleteGestureButton);
+};
+// Handles gesture creation.
+const handleAddGesture = () => {
+    if (!state.currentConfig) {
+        return;
+    }
+    const newGesture = {
+        sequence: ["UP"],
+        action: "SCROLL_TOP"
+    };
+    state.currentConfig = {
+        ...state.currentConfig,
+        gestures: [...state.currentConfig.gestures, newGesture]
+    };
+    state.selectedIndex = state.currentConfig.gestures.length - 1;
+    renderGestureList();
+};
+// Handles configuration save.
+const handleSave = async () => {
+    if (!state.currentConfig) {
+        return;
+    }
+    try {
+        validateGestureConfig(state.currentConfig);
+        await configStateService.save(state.currentConfig);
+        showToast("Configuration saved");
+        logger.info("Configuration saved from options page");
+    }
+    catch (error) {
+        logger.error("Save failed", error);
+        const message = error instanceof Error ? error.message : "Failed to save configuration";
+        showToast(message, true);
+    }
+};
+// Handles restoring defaults.
+const handleRestoreDefault = () => {
+    if (!state.defaultConfig) {
+        return;
+    }
+    state.currentConfig = cloneConfig(state.defaultConfig);
+    state.selectedIndex = state.currentConfig.gestures.length > 0 ? 0 : null;
+    renderGestureList();
+    showToast("Default configuration restored");
+    logger.info("Restored default configuration");
+};
+// Handles exporting configuration.
+const handleExport = () => {
+    if (!state.currentConfig) {
+        return;
+    }
+    const blob = new Blob([JSON.stringify(state.currentConfig, null, 2)], {
+        type: "application/json"
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "mouse-gestures.json";
+    link.click();
+    URL.revokeObjectURL(url);
+    showToast("Configuration exported");
+    logger.info("Exported configuration as JSON");
+};
+// Handles importing JSON configuration.
+const handleImport = (file) => {
+    file
+        .text()
+        .then((content) => {
+        const parsed = JSON.parse(content);
+        const normalized = {
+            defaultDelay: parsed.defaultDelay,
+            minMoveDistance: parsed.minMoveDistance,
+            gestures: parsed.gestures.map((gesture) => ({
+                ...gesture,
+                sequence: normalizeSequence(gesture.sequence)
+            }))
+        };
+        validateGestureConfig(normalized);
+        state.currentConfig = state.defaultConfig
+            ? mergeGestureConfigs(state.defaultConfig, normalized)
+            : normalized;
+        state.selectedIndex = state.currentConfig.gestures.length > 0 ? 0 : null;
+        renderGestureList();
+        showToast("Configuration imported");
+        logger.info("Imported configuration from file");
+    })
+        .catch((error) => {
+        logger.error("Import failed", error);
+        const message = error instanceof Error ? error.message : "Failed to import configuration";
+        showToast(message, true);
+    });
+};
+// Binds event listeners to controls.
+const bindEvents = () => {
+    elements.addGestureButton?.addEventListener("click", handleAddGesture);
+    elements.saveButton?.addEventListener("click", handleSave);
+    elements.restoreButton?.addEventListener("click", handleRestoreDefault);
+    elements.exportButton?.addEventListener("click", handleExport);
+    elements.importButton?.addEventListener("click", () => {
+        elements.importInput?.click();
+    });
+    elements.importInput?.addEventListener("change", () => {
+        const input = elements.importInput;
+        if (!input) {
+            return;
+        }
+        const file = input.files?.[0];
+        if (file) {
+            handleImport(file);
+            input.value = "";
+        }
+    });
+};
+// Initializes options page.
+const initialize = async () => {
+    try {
+        state.defaultConfig = await loadDefaultConfig();
+        const stored = await configStateService.read();
+        if (stored) {
+            state.currentConfig = mergeGestureConfigs(state.defaultConfig, stored.value);
+            logger.info(`Loaded stored config from ${stored.source}`);
+        }
+        else {
+            state.currentConfig = cloneConfig(state.defaultConfig);
+            logger.info("Using default config in options page");
+        }
+        state.selectedIndex = state.currentConfig.gestures.length > 0 ? 0 : null;
+        buildLayout();
+        bindEvents();
+        renderGestureList();
+    }
+    catch (error) {
+        logger.error("Initialization failed", error);
+        showToast("Failed to initialize options page", true);
+    }
+};
+void initialize();

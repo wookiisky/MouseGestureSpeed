@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "MouseGestureSpeed",
+  "version": "0.1.0",
+  "description": "Opensource simple Mouse gesture navigation with configurable actions",
+  "permissions": ["tabs", "storage", "scripting", "activeTab"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "dist/background/index.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["dist/content/entrypoint.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_page": "options.html",
+  "action": {
+    "default_title": "Simple Mouse Gesture"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "config/gestures.json",
+        "dist/content/*.js",
+        "dist/common/*.js",
+        "content/*.js",
+        "common/*.js"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

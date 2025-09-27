@@ -1,0 +1,18 @@
+{
+  "name": "simple-mouse-gesture",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Chrome mouse gesture extension with configurable actions.",
+  "scripts": {
+    "clean": "rimraf dist",
+    "build": "npm run clean && tsc && npm run sync:assets",
+    "build:watch": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "sync:assets": "node scripts/postbuild.mjs"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.269",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.4.5"
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "Simple Mouse Gesture",
+  "version": "0.1.0",
+  "description": "Mouse gesture navigation with configurable actions and logging.",
+  "permissions": [
+    "tabs",
+    "storage",
+    "scripting",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background/index.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content/entrypoint.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_page": "options.html",
+  "action": {
+    "default_title": "Simple Mouse Gesture"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "config/gestures.json",
+        "dist/content/*.js",
+        "dist/common/*.js",
+        "content/*.js",
+        "common/*.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
+}
