@@ -66,8 +66,9 @@
   - Header：展示扩展名称与配置说明，提供“还原默认”“导入”与“导出”按钮。
   - 主体：左右布局，左侧为手势列表（可新增或删除），右侧为所选手势配置表单。
 - 表单设计：
-  - 手势序列编辑：
-    - 提供方向按钮（`UP`、`DOWN`、`LEFT`、`RIGHT`）快速追加。
+- 手势序列编辑：
+  - 提供方向按钮（`UP`、`DOWN`、`LEFT`、`RIGHT`、`LEFT_CLICK`）快速追加。
+  - 右键按住为默认前提，无需在序列中包含 `RIGHT_BUTTON`（并在解析时会被忽略）。
     - 支持文本模式输入，自动按分隔符拆分为数组。
   - 动作选择：
     - 下拉选择支持的动作枚举（如 `NAVIGATE_BACK`）。
@@ -99,12 +100,13 @@
     { "sequence": ["UP"], "action": "SCROLL_TOP" },
     { "sequence": ["DOWN"], "action": "SCROLL_BOTTOM" },
     { "sequence": ["DOWN", "UP"], "action": "RELOAD" },
-    { "sequence": ["RIGHT_BUTTON", "LEFT_CLICK"], "action": "CLOSE_TAB" }
+    { "sequence": ["LEFT_CLICK"], "action": "CLOSE_TAB" }
   ]
 }
 ```
 - 用户配置保存在 `chrome.storage.sync` 中，实现多设备同步；若超出同步配额，可退化到 `chrome.storage.local`。
 - ConfigStateService 提供合并策略：全局参数覆盖、手势列表按 `sequence` 或显式 `id` 匹配更新。
+ - 归一化：`normalizeSequence` 会把输入序列转为大写并移除 `RIGHT_BUTTON`，确保右键按住作为默认前提且无需出现在配置中。
 
 ## 事件流程
 1. 扩展安装或更新：BackgroundActionExecutor 注册消息通道，ConfigStateService 预加载默认配置。

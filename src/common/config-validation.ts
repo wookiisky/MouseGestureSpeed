@@ -20,7 +20,9 @@ export const VALID_ACTIONS: GestureAction[] = [
 
 // Normalizes string directions to enums.
 export const normalizeSequence = (sequence: Array<string | Direction>): Direction[] => {
-  return sequence.map((item) => String(item).toUpperCase().trim() as Direction);
+  // Normalize tokens and remove RIGHT_BUTTON as right-button hold is implicit.
+  const normalized = sequence.map((item) => String(item).toUpperCase().trim() as Direction);
+  return normalized.filter((token) => token !== "RIGHT_BUTTON");
 };
 
 // Validates single gesture definition.

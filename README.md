@@ -36,7 +36,7 @@ Recommended during development: `npm run dev` for incremental builds in a separa
 - UP → Scroll to top
 - DOWN → Scroll to bottom
 - DOWN > UP → Reload page
-- RIGHT_BUTTON > LEFT_CLICK → Close current tab
+- LEFT_CLICK → Close current tab (while holding right button)
 
 
 ## Permissions and Behavior
@@ -65,13 +65,15 @@ Schema (example):
     { "sequence": ["UP"], "action": "SCROLL_TOP" },
     { "sequence": ["DOWN"], "action": "SCROLL_BOTTOM" },
     { "sequence": ["DOWN", "UP"], "action": "RELOAD" },
-    { "sequence": ["RIGHT_BUTTON", "LEFT_CLICK"], "action": "CLOSE_TAB" }
+    { "sequence": ["LEFT_CLICK"], "action": "CLOSE_TAB" }
   ]
 }
 ```
 
-- Directions: `UP`, `DOWN`, `LEFT`, `RIGHT`, `RIGHT_BUTTON`, `LEFT_CLICK`
+- Directions: `UP`, `DOWN`, `LEFT`, `RIGHT`, `LEFT_CLICK`
 - Actions: `NAVIGATE_BACK`, `NAVIGATE_FORWARD`, `SCROLL_TOP`, `SCROLL_BOTTOM`, `RELOAD`, `CLOSE_TAB`
+
+Note: Right-button hold is implicit for all gestures. Any `RIGHT_BUTTON` tokens in sequences are ignored and stripped during parsing/normalization.
 
 ## How It Works
 

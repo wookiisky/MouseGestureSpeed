@@ -375,18 +375,6 @@ const renderGestureEditor = () => {
     directionsToolbar.appendChild(button);
   });
 
-  const mixedButton = document.createElement("button");
-  mixedButton.className = "btn-ghost btn-sm";
-  mixedButton.type = "button";
-  mixedButton.textContent = "RIGHT_BUTTON + LEFT_CLICK";
-  mixedButton.addEventListener("click", () => {
-    updateSelectedGesture((current) => ({
-      ...current,
-      sequence: ["RIGHT_BUTTON", "LEFT_CLICK"]
-    }));
-  });
-  directionsToolbar.appendChild(mixedButton);
-
   sequenceField.append(sequenceLabel, sequenceInput, directionsToolbar);
   editor.appendChild(sequenceField);
 

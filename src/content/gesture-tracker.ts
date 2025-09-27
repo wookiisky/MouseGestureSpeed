@@ -156,9 +156,6 @@ export class GestureTracker {
     }
 
     if (event.button === 0) {
-      if (!this.sequence.includes("RIGHT_BUTTON")) {
-        this.sequence.push("RIGHT_BUTTON");
-      }
       this.sequence.push("LEFT_CLICK");
       logger.info("Left click captured during gesture");
       const triggered = this.completeGesture("left-click");

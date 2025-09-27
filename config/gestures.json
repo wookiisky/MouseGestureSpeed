@@ -7,6 +7,6 @@
     { "sequence": ["UP"], "action": "SCROLL_TOP" },
     { "sequence": ["DOWN"], "action": "SCROLL_BOTTOM" },
     { "sequence": ["DOWN", "UP"], "action": "RELOAD" },
-    { "sequence": ["RIGHT_BUTTON", "LEFT_CLICK"], "action": "CLOSE_TAB" }
+    { "sequence": ["LEFT_CLICK"], "action": "CLOSE_TAB" }
   ]
 }
