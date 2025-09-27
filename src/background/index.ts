@@ -198,6 +198,11 @@ const ensureContentActive = async (tabId: number) => {
 const toOriginPattern = (url: string) => {
   try {
     const u = new URL(url);
+    // Only http/https origins are valid for permission requests
+    if (u.protocol !== "http:" && u.protocol !== "https:") {
+      logger.info("Unsupported scheme for origin pattern", { url, protocol: u.protocol });
+      return null;
+    }
     return `${u.origin}/*`;
   } catch {
     return null;
@@ -205,14 +210,23 @@ const toOriginPattern = (url: string) => {
 };
 
 // Returns true if URL is restricted by Chrome.
-const isRestrictedUrl = (url: string) => /^(chrome|edge|about|file|devtools):/i.test(url);
+const isRestrictedUrl = (url: string) => /^(chrome|chrome-extension|chrome-search|chrome-untrusted|edge|about|devtools):/i.test(url);
 
 // Checks whether we have host permission for the origin.
 const hasHostPermission = (pattern: string) =>
   new Promise<boolean>((resolve) => {
     try {
-      chrome.permissions.contains({ origins: [pattern] }, (granted) => resolve(Boolean(granted)));
-    } catch {
+      chrome.permissions.contains({ origins: [pattern] }, (granted) => {
+        const err = chrome.runtime.lastError;
+        if (err) {
+          logger.info("permissions.contains warning", { pattern, error: err.message });
+          resolve(false);
+          return;
+        }
+        resolve(Boolean(granted));
+      });
+    } catch (e) {
+      logger.info("permissions.contains warning", { pattern, error: String(e) });
       resolve(false);
     }
   });
@@ -221,8 +235,17 @@ const hasHostPermission = (pattern: string) =>
 const requestHostPermission = (pattern: string) =>
   new Promise<boolean>((resolve) => {
     try {
-      chrome.permissions.request({ origins: [pattern] }, (granted) => resolve(Boolean(granted)));
-    } catch {
+      chrome.permissions.request({ origins: [pattern] }, (granted) => {
+        const err = chrome.runtime.lastError;
+        if (err) {
+          logger.info("permissions.request warning", { pattern, error: err.message });
+          resolve(false);
+          return;
+        }
+        resolve(Boolean(granted));
+      });
+    } catch (e) {
+      logger.info("permissions.request warning", { pattern, error: String(e) });
       resolve(false);
     }
   });

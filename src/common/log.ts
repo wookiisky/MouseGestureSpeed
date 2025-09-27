@@ -1,7 +1,11 @@
-export type LogLevel = "silent" | "error" | "info";
+export type LogLevel = "silent" | "error" | "warn" | "info";
 
 type Logger = {
+  // Logs informational messages.
   info: (message: string, ...args: unknown[]) => void;
+  // Logs warning messages.
+  warn: (message: string, ...args: unknown[]) => void;
+  // Logs error messages.
   error: (message: string, ...args: unknown[]) => void;
 };
 
@@ -21,13 +25,21 @@ export const createLogger = (moduleId: string): Logger => {
   const format = (message: string) => `[${moduleId}] ${message}`;
 
   return {
+    // Logs info when level is info.
     info: (message: string, ...args: unknown[]) => {
       if (currentLevel === "info") {
         console.log(format(message), ...args);
       }
     },
+    // Logs warn when level is warn or info.
+    warn: (message: string, ...args: unknown[]) => {
+      if (currentLevel === "info" || currentLevel === "warn") {
+        console.warn(format(message), ...args);
+      }
+    },
+    // Logs error when level is error, warn, or info.
     error: (message: string, ...args: unknown[]) => {
-      if (currentLevel === "info" || currentLevel === "error") {
+      if (currentLevel !== "silent") {
         console.error(format(message), ...args);
       }
     }

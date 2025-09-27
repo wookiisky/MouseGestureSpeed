@@ -65,8 +65,22 @@ const bootstrap = async () => {
     "dist/content/index.js"
   ];
 
+  const canGetUrl = typeof chrome !== "undefined" && !!chrome.runtime && typeof chrome.runtime.getURL === "function";
+  if (!canGetUrl) {
+    console.warn("[ContentEntrypoint] Runtime not ready; skip bootstrap");
+    showReloadPrompt();
+    return;
+  }
+
   for (const path of candidates) {
-    const url = chrome.runtime.getURL(path);
+    let url: string | null = null;
+    try {
+      url = chrome.runtime.getURL(path);
+    } catch (e) {
+      console.warn("[ContentEntrypoint] getURL failed; context invalidated", e);
+      // Try next candidate; if both fail, we will show prompt
+      continue;
+    }
     // Attempt import of the candidate path
     // eslint-disable-next-line no-await-in-loop
     const ok = await tryImport(url);
@@ -82,4 +96,14 @@ const bootstrap = async () => {
 };
 
 // Start the bootstrap process
+// Capture unhandled rejections to avoid noisy errors on stale pages
+window.addEventListener("unhandledrejection", (e) => {
+  try {
+    console.warn("[ContentEntrypoint] Unhandled rejection", e.reason);
+  } catch {
+    // ignore
+  }
+  e.preventDefault();
+});
+
 void bootstrap();
