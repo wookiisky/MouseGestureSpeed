@@ -1,5 +1,5 @@
 {
-  "name": "simple-mouse-gesture",
+  "name": "mouse-gesture-speed",
   "version": "0.1.0",
   "private": true,
   "description": "Chrome mouse gesture extension with configurable actions.",
@@ -8,10 +8,12 @@
     "build": "npm run clean && tsc && npm run sync:assets",
     "build:watch": "tsc --watch",
     "typecheck": "tsc --noEmit",
-    "sync:assets": "node scripts/postbuild.mjs"
+    "sync:assets": "node scripts/postbuild.mjs",
+    "package": "npm run build && node scripts/package-zip.mjs"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.269",
+    "archiver": "^6.0.2",
     "rimraf": "^5.0.5",
     "typescript": "^5.4.5"
   }

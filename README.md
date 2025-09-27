@@ -103,6 +103,12 @@ Key scripts:
 - `npm run build` — Compile TypeScript and copy/adjust assets into `dist/`
 - `npm run build:watch` — Watch-mode TypeScript build
 - `npm run typecheck` — Type-only compilation
+- `npm run package` — Build then create a release zip under `release/`
+
+## Packaging
+
+- Run: `npm run package`
+- Output: `release/<name>-<version>.zip` containing the built extension (with `manifest.json` at archive root)
 
 ## Troubleshooting
 
@@ -121,4 +127,3 @@ Key scripts:
 - Optional overlay for live gesture feedback
 - Additional actions and per-site overrides
 - Settings for log level in Options page
-

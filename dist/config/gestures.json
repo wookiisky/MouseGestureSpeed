@@ -1,5 +1,5 @@
 {
-  "defaultDelay": 500,
+  "defaultDelay": 50,
   "minMoveDistance": 10,
   "gestures": [
     { "sequence": ["LEFT"], "action": "NAVIGATE_BACK" },

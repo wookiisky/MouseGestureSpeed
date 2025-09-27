@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "MouseGestureSpeed",
+  "name": "Mouse Gesture Speed",
   "version": "0.1.0",
-  "description": "Opensource simple Mouse gesture navigation with configurable actions",
+  "description": "Open source simple Mouse Gesture navigation with configurable actions",
   "permissions": ["tabs", "storage", "scripting", "activeTab"],
   "host_permissions": ["<all_urls>"],
   "background": {
@@ -18,7 +18,7 @@
   ],
   "options_page": "options.html",
   "action": {
-    "default_title": "Simple Mouse Gesture"
+    "default_title": "Mouse Gesture Speed"
   },
   "web_accessible_resources": [
     {

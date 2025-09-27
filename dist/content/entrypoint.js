@@ -13,7 +13,6 @@ const tryImport = async (url) => {
         return false;
     }
 };
-
 // Shows a clickable reload prompt overlay
 const showReloadPrompt = () => {
     try {

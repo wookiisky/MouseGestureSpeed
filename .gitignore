@@ -11,3 +11,6 @@ AGENTS.md
 .idea
 .dist
 node_modules
+release/
+*.zip
+pnpm-lock.yaml
