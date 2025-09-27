@@ -1,4 +1,4 @@
-# Simple Mouse Gesture (MV3)
+# Mouse Gesture Speed (MV3)
 
 Open-source Chrome mouse gesture extension with configurable actions. Defaults are minimal and safe; configuration is editable in the Options page with import/export support.
 
@@ -37,6 +37,7 @@ Recommended during development: `npm run dev` for incremental builds in a separa
 - DOWN → Scroll to bottom
 - DOWN > UP → Reload page
 - LEFT_CLICK → Close current tab (while holding right button)
+- RIGHT > LEFT → Undo closed tab
 
 
 ## Permissions and Behavior

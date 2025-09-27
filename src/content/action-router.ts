@@ -12,10 +12,13 @@ const DOM_ACTIONS: Record<GestureAction, () => void> = {
   RELOAD: () => window.location.reload(),
   CLOSE_TAB: () => {
     // Placeholder, handled separately.
+  },
+  REOPEN_CLOSED_TAB: () => {
+    // Placeholder, handled separately.
   }
 };
 
-const isDomAction = (action: GestureAction) => action !== "CLOSE_TAB";
+const isDomAction = (action: GestureAction) => action !== "CLOSE_TAB" && action !== "REOPEN_CLOSED_TAB";
 
 export class ActionRouter {
   // Routes action to DOM or background.

@@ -9,7 +9,7 @@
     "48": "icon48.png",
     "128": "icon128.png"
   },
-  "permissions": ["tabs", "storage", "scripting", "activeTab"],
+  "permissions": ["tabs", "storage", "scripting", "activeTab", "sessions"],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "dist/background/index.js",

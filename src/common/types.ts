@@ -12,7 +12,8 @@ export type GestureAction =
   | "SCROLL_TOP"
   | "SCROLL_BOTTOM"
   | "RELOAD"
-  | "CLOSE_TAB";
+  | "CLOSE_TAB"
+  | "REOPEN_CLOSED_TAB";
 
 export interface GestureDefinition {
   id?: string;

@@ -15,6 +15,11 @@ const removeTab = (tabId: number) =>
     });
   });
 
+// Restores the most recently closed tab or window
+const restoreLastClosed = async () => {
+  await chrome.sessions.restore();
+};
+
 export class BackgroundActionExecutor {
   // Executes privileged action through background context.
   async execute(action: GestureAction, sender: chrome.runtime.MessageSender) {
@@ -31,6 +36,15 @@ export class BackgroundActionExecutor {
           logger.info(`Closed tab ${tabId}`);
         } catch (error) {
           logger.error("Failed to close tab", error);
+        }
+        break;
+      }
+      case "REOPEN_CLOSED_TAB": {
+        try {
+          await restoreLastClosed();
+          logger.info("Restored last closed tab or window");
+        } catch (error) {
+          logger.error("Failed to restore last closed item", error);
         }
         break;
       }

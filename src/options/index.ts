@@ -108,7 +108,7 @@ const buildLayout = () => {
 
   const header = document.createElement("header");
   const title = document.createElement("h1");
-  title.textContent = "Simple Mouse Gesture";
+  title.textContent = "Mouse Gesture Speed";
   header.appendChild(title);
 
   const toolbar = document.createElement("div");
