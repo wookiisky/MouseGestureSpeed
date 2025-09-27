@@ -9,7 +9,6 @@ AGENTS.md
 .yoyo/
 .vscode/settings.json
 .idea
-.dist
 node_modules
 release/
 *.zip

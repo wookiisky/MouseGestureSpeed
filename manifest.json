@@ -3,6 +3,12 @@
   "name": "Mouse Gesture Speed",
   "version": "0.1.0",
   "description": "Open source simple Mouse Gesture navigation with configurable actions",
+  "icons": {
+    "16": "icon16.png",
+    "32": "icon32.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
   "permissions": ["tabs", "storage", "scripting", "activeTab"],
   "host_permissions": ["<all_urls>"],
   "background": {
@@ -18,7 +24,12 @@
   ],
   "options_page": "options.html",
   "action": {
-    "default_title": "Mouse Gesture Speed"
+    "default_title": "Mouse Gesture Speed",
+    "default_icon": {
+      "16": "icon16.png",
+      "24": "icon24.png",
+      "32": "icon32.png"
+    }
   },
   "web_accessible_resources": [
     {

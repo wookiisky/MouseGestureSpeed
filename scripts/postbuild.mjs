@@ -27,6 +27,24 @@ const writeManifest = async () => {
     });
   }
 
+  // Normalize icons and action.default_icon in case they contain 'dist/'
+  if (manifest.icons && typeof manifest.icons === 'object') {
+    for (const k of Object.keys(manifest.icons)) {
+      const v = manifest.icons[k];
+      if (typeof v === 'string') {
+        manifest.icons[k] = normalizeScriptPath(v);
+      }
+    }
+  }
+  if (manifest.action && manifest.action.default_icon && typeof manifest.action.default_icon === 'object') {
+    for (const k of Object.keys(manifest.action.default_icon)) {
+      const v = manifest.action.default_icon[k];
+      if (typeof v === 'string') {
+        manifest.action.default_icon[k] = normalizeScriptPath(v);
+      }
+    }
+  }
+
   await writeFile(targetPath, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
   console.log('Manifest copied to dist/manifest.json');
 };
@@ -44,6 +62,21 @@ const copyStaticAssets = async () => {
   console.log('Copied config directory');
 };
 
+// Copy icon files to dist root
+const copyIcons = async () => { // single-line comment
+  const icons = ['icon16.png', 'icon24.png', 'icon32.png', 'icon48.png', 'icon128.png'];
+  for (const icon of icons) {
+    const source = path.join(rootDir, icon);
+    const target = path.join(distDir, icon);
+    try {
+      await cp(source, target, { force: true });
+      console.log('Copied icon ' + icon);
+    } catch (err) {
+      console.warn('Skip missing icon ' + icon);
+    }
+  }
+};
+
 const adjustOptionsHtml = async () => {
   const target = path.join(distDir, 'options.html');
   const html = await readFile(target, 'utf8');
@@ -55,6 +88,7 @@ const run = async () => {
   await mkdir(distDir, { recursive: true });
   await writeManifest();
   await copyStaticAssets();
+  await copyIcons();
   await adjustOptionsHtml();
 };
 
@@ -62,4 +96,3 @@ run().catch((error) => {
   console.error('Post-build step failed', error);
   process.exitCode = 1;
 });
-
