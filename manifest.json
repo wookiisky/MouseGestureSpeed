@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Mouse Gesture Speed",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Open source simple Mouse Gesture navigation with configurable actions",
   "icons": {
     "16": "icon16.png",

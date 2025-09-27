@@ -16,7 +16,9 @@ export const VALID_ACTIONS: GestureAction[] = [
   "SCROLL_BOTTOM",
   "RELOAD",
   "CLOSE_TAB",
-  "REOPEN_CLOSED_TAB"
+  "REOPEN_CLOSED_TAB",
+  "SWITCH_TAB_LEFT",
+  "SWITCH_TAB_RIGHT"
 ];
 
 // Normalizes string directions to enums.

@@ -8,6 +8,8 @@
     { "sequence": ["DOWN"], "action": "SCROLL_BOTTOM" },
     { "sequence": ["DOWN", "UP"], "action": "RELOAD" },
     { "sequence": ["LEFT_CLICK"], "action": "CLOSE_TAB" },
-    { "sequence": ["RIGHT", "LEFT"], "action": "REOPEN_CLOSED_TAB" }
+    { "sequence": ["RIGHT", "LEFT"], "action": "REOPEN_CLOSED_TAB" },
+    { "sequence": ["UP", "LEFT"], "action": "SWITCH_TAB_LEFT" },
+    { "sequence": ["UP", "RIGHT"], "action": "SWITCH_TAB_RIGHT" }
   ]
 }

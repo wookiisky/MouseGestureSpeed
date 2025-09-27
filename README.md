@@ -38,6 +38,8 @@ Recommended during development: `npm run dev` for incremental builds in a separa
 - DOWN > UP → Reload page
 - LEFT_CLICK → Close current tab (while holding right button)
 - RIGHT > LEFT → Undo closed tab
+- UP > LEFT → Switch to left tab
+- UP > RIGHT → Switch to right tab
 
 
 ## Permissions and Behavior
