@@ -7,6 +7,7 @@ import {
   validateGestureConfig
 } from "../common/config-validation.js";
 import { createLogger } from "../common/log.js";
+import { createSequenceMultiSelect } from "./sequence-multiselect.js";
 import type { Direction, GestureAction, GestureConfig, GestureDefinition } from "../common/types.js";
 
 const logger = createLogger("OptionsPage");
@@ -344,38 +345,14 @@ const renderGestureEditor = () => {
   sequenceField.className = "field";
   const sequenceLabel = document.createElement("label");
   sequenceLabel.textContent = "Gesture sequence";
-  const sequenceInput = document.createElement("textarea");
-  sequenceInput.value = gesture.sequence.join(" > ");
-  sequenceInput.addEventListener("change", () => {
-    try {
-      const parsed = parseSequence(sequenceInput.value);
-      updateSelectedGesture((current) => ({ ...current, sequence: parsed }));
-    } catch (error) {
-      if (error instanceof Error) {
-        showToast(error.message, true);
-        logger.error("Sequence parse failed", error);
-      }
-      sequenceInput.value = gesture.sequence.join(" > ");
+  const sequenceSelect = createSequenceMultiSelect({
+    value: gesture.sequence,
+    allOptions: VALID_DIRECTIONS.filter((d) => d !== "RIGHT_BUTTON"),
+    onChange: (next) => {
+      updateSelectedGesture((current) => ({ ...current, sequence: next }));
     }
   });
-
-  const directionsToolbar = document.createElement("div");
-  directionsToolbar.className = "toolbar";
-  VALID_DIRECTIONS.filter((direction) => direction !== "RIGHT_BUTTON").forEach((direction) => {
-    const button = document.createElement("button");
-    button.className = "btn-ghost btn-sm";
-    button.type = "button";
-    button.textContent = direction;
-    button.addEventListener("click", () => {
-      updateSelectedGesture((current) => ({
-        ...current,
-        sequence: [...current.sequence, direction]
-      }));
-    });
-    directionsToolbar.appendChild(button);
-  });
-
-  sequenceField.append(sequenceLabel, sequenceInput, directionsToolbar);
+  sequenceField.append(sequenceLabel, sequenceSelect);
   editor.appendChild(sequenceField);
 
   const actionField = document.createElement("div");
