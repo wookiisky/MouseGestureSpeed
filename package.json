@@ -6,7 +6,7 @@
   "scripts": {
     "clean": "rimraf dist",
     "build": "npm run clean && tsc && npm run sync:assets",
-    "build:watch": "tsc --watch",
+    "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "sync:assets": "node scripts/postbuild.mjs",
     "package": "npm run build && node scripts/package-zip.mjs",

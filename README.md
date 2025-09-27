@@ -27,7 +27,7 @@ Option B — Build from source
 2. Build: `npm run build`
 3. Load unpacked: point to the repository root (or `dist/`)
 
-Recommended during development: `npm run build:watch` for incremental builds in a separate terminal.
+Recommended during development: `npm run dev` for incremental builds in a separate terminal.
 
 ## Default Gestures
 
@@ -101,7 +101,7 @@ Logging: each module uses a tagged logger (e.g., `[GestureTracker]`, `[ActionRou
 
 Key scripts:
 - `npm run build` — Compile TypeScript and copy/adjust assets into `dist/`
-- `npm run build:watch` — Watch-mode TypeScript build
+- `npm run dev` — Watch-mode TypeScript build
 - `npm run typecheck` — Type-only compilation
 - `npm run package` — Build then create a release zip under `release/`
 

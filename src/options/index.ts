@@ -83,6 +83,19 @@ const loadDefaultConfig = async (): Promise<GestureConfig> => {
   return normalized;
 };
 
+// Synchronizes global inputs from current state.
+const syncGlobalInputs = () => { // single-line comment
+  if (!state.currentConfig) {
+    return;
+  }
+  if (elements.delayInput) {
+    elements.delayInput.value = String(state.currentConfig.defaultDelay);
+  }
+  if (elements.minDistanceInput) {
+    elements.minDistanceInput.value = String(state.currentConfig.minMoveDistance);
+  }
+};
+
 // Builds static layout structure.
 const buildLayout = () => {
   const app = document.getElementById("app");
@@ -101,6 +114,7 @@ const buildLayout = () => {
   toolbar.className = "toolbar";
 
   elements.saveButton = document.createElement("button");
+  elements.saveButton.className = "btn-primary";
   elements.saveButton.textContent = "Save";
 
   elements.restoreButton = document.createElement("button");
@@ -128,6 +142,64 @@ const buildLayout = () => {
   header.appendChild(toolbar);
   app.appendChild(header);
 
+  // Global settings card
+  const settingsSection = document.createElement("section");
+  settingsSection.className = "settings-card";
+
+  const settingsHeader = document.createElement("div");
+  settingsHeader.className = "toolbar";
+  const settingsTitle = document.createElement("h2");
+  settingsTitle.textContent = "Global Settings";
+  settingsHeader.appendChild(settingsTitle);
+  settingsSection.appendChild(settingsHeader);
+
+  const settingsGrid = document.createElement("div");
+  settingsGrid.className = "settings-grid";
+
+  const delayField = document.createElement("div");
+  delayField.className = "field";
+  const delayLabel = document.createElement("label");
+  delayLabel.textContent = "Min gesture duration (ms)";
+  elements.delayInput = document.createElement("input");
+  elements.delayInput.type = "number";
+  elements.delayInput.min = "0";
+  elements.delayInput.addEventListener("change", () => {
+    if (!state.currentConfig) {
+      return;
+    }
+    const fallback = state.currentConfig.defaultDelay;
+    const value = Number(elements.delayInput?.value ?? fallback);
+    state.currentConfig = {
+      ...state.currentConfig,
+      defaultDelay: Number.isFinite(value) ? value : fallback
+    };
+  });
+  delayField.append(delayLabel, elements.delayInput);
+
+  const distanceField = document.createElement("div");
+  distanceField.className = "field";
+  const minDistanceLabel = document.createElement("label");
+  minDistanceLabel.textContent = "Min move distance (px)";
+  elements.minDistanceInput = document.createElement("input");
+  elements.minDistanceInput.type = "number";
+  elements.minDistanceInput.min = "1";
+  elements.minDistanceInput.addEventListener("change", () => {
+    if (!state.currentConfig) {
+      return;
+    }
+    const fallback = state.currentConfig.minMoveDistance;
+    const value = Number(elements.minDistanceInput?.value ?? fallback);
+    state.currentConfig = {
+      ...state.currentConfig,
+      minMoveDistance: Number.isFinite(value) ? value : fallback
+    };
+  });
+  distanceField.append(minDistanceLabel, elements.minDistanceInput);
+
+  settingsGrid.append(delayField, distanceField);
+  settingsSection.appendChild(settingsGrid);
+  app.appendChild(settingsSection);
+
   const main = document.createElement("main");
 
   const listSection = document.createElement("section");
@@ -138,6 +210,7 @@ const buildLayout = () => {
   listTitle.textContent = "Gestures";
 
   elements.addGestureButton = document.createElement("button");
+  elements.addGestureButton.className = "btn-primary";
   elements.addGestureButton.textContent = "Add";
 
   listHeader.append(listTitle, elements.addGestureButton);
@@ -152,6 +225,8 @@ const buildLayout = () => {
 
   main.append(listSection, elements.editor);
   app.appendChild(main);
+
+  syncGlobalInputs();
 };
 
 // Renders gesture list items.
@@ -255,45 +330,6 @@ const renderGestureEditor = () => {
 
   const config = state.currentConfig;
 
-  const globalFields = document.createElement("div");
-  globalFields.className = "field";
-
-  const delayLabel = document.createElement("label");
-  delayLabel.textContent = "Min gesture duration (ms)";
-  elements.delayInput = document.createElement("input");
-  elements.delayInput.type = "number";
-  elements.delayInput.min = "0";
-  elements.delayInput.value = String(config.defaultDelay);
-  elements.delayInput.addEventListener("change", () => {
-    const value = Number(elements.delayInput?.value ?? config.defaultDelay);
-    state.currentConfig = {
-      ...state.currentConfig!,
-      defaultDelay: Number.isFinite(value) ? value : config.defaultDelay
-    };
-  });
-
-  const minDistanceLabel = document.createElement("label");
-  minDistanceLabel.textContent = "Min move distance (px)";
-  elements.minDistanceInput = document.createElement("input");
-  elements.minDistanceInput.type = "number";
-  elements.minDistanceInput.min = "1";
-  elements.minDistanceInput.value = String(config.minMoveDistance);
-  elements.minDistanceInput.addEventListener("change", () => {
-    const value = Number(elements.minDistanceInput?.value ?? config.minMoveDistance);
-    state.currentConfig = {
-      ...state.currentConfig!,
-      minMoveDistance: Number.isFinite(value) ? value : config.minMoveDistance
-    };
-  });
-
-  globalFields.append(
-    delayLabel,
-    elements.delayInput,
-    minDistanceLabel,
-    elements.minDistanceInput
-  );
-  editor.appendChild(globalFields);
-
   if (state.selectedIndex === null) {
     const empty = document.createElement("p");
     empty.className = "empty-state";
@@ -327,6 +363,7 @@ const renderGestureEditor = () => {
   directionsToolbar.className = "toolbar";
   VALID_DIRECTIONS.filter((direction) => direction !== "RIGHT_BUTTON").forEach((direction) => {
     const button = document.createElement("button");
+    button.className = "btn-ghost btn-sm";
     button.type = "button";
     button.textContent = direction;
     button.addEventListener("click", () => {
@@ -339,6 +376,7 @@ const renderGestureEditor = () => {
   });
 
   const mixedButton = document.createElement("button");
+  mixedButton.className = "btn-ghost btn-sm";
   mixedButton.type = "button";
   mixedButton.textContent = "RIGHT_BUTTON + LEFT_CLICK";
   mixedButton.addEventListener("click", () => {
@@ -374,6 +412,7 @@ const renderGestureEditor = () => {
   editor.appendChild(actionField);
 
   elements.deleteGestureButton = document.createElement("button");
+  elements.deleteGestureButton.className = "btn-danger";
   elements.deleteGestureButton.type = "button";
   elements.deleteGestureButton.textContent = "Delete Gesture";
   elements.deleteGestureButton.addEventListener("click", () => {
@@ -433,6 +472,7 @@ const handleRestoreDefault = () => {
   state.currentConfig = cloneConfig(state.defaultConfig);
   state.selectedIndex = state.currentConfig.gestures.length > 0 ? 0 : null;
   renderGestureList();
+  syncGlobalInputs();
   showToast("Default configuration restored");
   logger.info("Restored default configuration");
 };
@@ -476,6 +516,7 @@ const handleImport = (file: File) => {
         : normalized;
       state.selectedIndex = state.currentConfig.gestures.length > 0 ? 0 : null;
       renderGestureList();
+      syncGlobalInputs();
       showToast("Configuration imported");
       logger.info("Imported configuration from file");
     })
