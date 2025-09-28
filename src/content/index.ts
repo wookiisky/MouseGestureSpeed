@@ -8,7 +8,8 @@ import type {
   ConfigUpdatePayload,
   GestureConfig,
   GestureTriggeredPayload,
-  RuntimeMessage
+  RuntimeMessage,
+  SuppressContextMenuPayload
 } from "../common/types.js";
 
 const logger = createLogger("ContentEntry");
@@ -59,5 +60,14 @@ onRuntimeMessage<RuntimeMessage<"config/updated", ConfigUpdatePayload>>("config/
   const merged = await gestureConfigLoader.applyUpdate(message.payload.config);
   applyConfig(merged);
 });
+
+onRuntimeMessage<RuntimeMessage<"gesture/suppress-contextmenu", SuppressContextMenuPayload>>(
+  "gesture/suppress-contextmenu",
+  (message) => {
+    const windowMs = message.payload?.windowMs ?? 0;
+    logger.info(`Received suppress-contextmenu signal windowMs=${windowMs}`);
+    tracker.armContextMenuSuppression(windowMs);
+  }
+);
 
 void bootstrap();

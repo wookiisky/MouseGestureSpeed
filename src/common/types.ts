@@ -34,7 +34,8 @@ export type RuntimeMessageType =
   | "config/current"
   | "config/updated"
   | "gesture/triggered"
-  | "gesture/action";
+  | "gesture/action"
+  | "gesture/suppress-contextmenu";
 
 export interface RuntimeMessage<T extends RuntimeMessageType = RuntimeMessageType, P = unknown> {
   type: T;
@@ -52,6 +53,11 @@ export type GestureTriggeredPayload = {
 
 export type GestureActionPayload = {
   action: GestureAction;
+};
+
+export type SuppressContextMenuPayload = {
+  // Optional suppression window in ms (informational only)
+  windowMs?: number;
 };
 
 export type Subscriber<T> = (value: T) => void;

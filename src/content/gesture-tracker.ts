@@ -19,6 +19,7 @@ export class GestureTracker {
   private listenersBound = false;
   private startTimestamp: number | null = null;
   private suppressNextContextMenu = false;
+  private suppressUntil: number | null = null;
 
   // Creates tracker with callbacks.
   constructor(options: GestureTrackerOptions) {
@@ -140,6 +141,14 @@ export class GestureTracker {
       return;
     }
 
+    // If suppression expired, do not block.
+    if (this.suppressUntil && Date.now() > this.suppressUntil) {
+      this.suppressNextContextMenu = false;
+      this.suppressUntil = null;
+      logger.info("Context menu suppression expired");
+      return;
+    }
+
     event.preventDefault();
     // Attempt to block other handlers on the page.
     if (typeof (event as any).stopImmediatePropagation === "function") {
@@ -147,6 +156,7 @@ export class GestureTracker {
     }
     event.stopPropagation();
     this.suppressNextContextMenu = false;
+    this.suppressUntil = null;
     logger.info("Context menu suppressed after gesture");
   }
 
@@ -192,7 +202,7 @@ export class GestureTracker {
     }
 
     logger.info(`Gesture completed reason=${reason} duration=${duration}ms`, this.sequence);
-    this.suppressNextContextMenu = true;
+    this.armContextMenuSuppression();
     this.options.onSequence([...this.sequence]);
     this.resetState();
     return true;
@@ -218,6 +228,15 @@ export class GestureTracker {
     this.lastDirection = null;
     this.startTimestamp = null;
     logger.info("Tracker state reset");
+  }
+
+  // Arms one-shot suppression for next contextmenu.
+  armContextMenuSuppression(windowMs: number = 0) {
+    this.suppressNextContextMenu = true;
+    this.suppressUntil = windowMs > 0 ? Date.now() + windowMs : null;
+    logger.info(
+      `Armed context menu suppression${windowMs > 0 ? ` with window=${windowMs}ms` : ""}`
+    );
   }
 }
 

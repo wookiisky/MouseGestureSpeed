@@ -16,10 +16,15 @@ async function ensureDir(dirPath) { // single-line comment
   }
 }
 
-// Read package name and version
-async function getPkg() { // single-line comment
-  const pkgRaw = await readFile(path.join(rootDir, 'package.json'), 'utf8');
-  return JSON.parse(pkgRaw);
+// Read manifest name and version
+async function getManifestMeta() { // single-line comment
+  const manifestPath = path.join(rootDir, 'manifest.json');
+  const raw = await readFile(manifestPath, 'utf8');
+  const json = JSON.parse(raw);
+  if (!json.name || !json.version) {
+    throw new Error('manifest.json must include name and version');
+  }
+  return { name: json.name, version: json.version };
 }
 
 // Create zip from dist content
@@ -68,8 +73,10 @@ async function run() { // single-line comment
 
   await ensureDir(releaseDir);
 
-  const pkg = await getPkg();
-  const base = `${pkg.name}-${pkg.version}`;
+  const { name, version } = await getManifestMeta();
+  console.log('[pack] Using manifest name: ' + name);
+  console.log('[pack] Using manifest version: ' + version);
+  const base = `${name}-${version}`;
   const zipPath = path.join(releaseDir, `${base}.zip`);
 
   // Remove existing zip if present
@@ -91,4 +98,3 @@ run().catch((err) => {
   console.error('[pack] Failed:', err);
   process.exitCode = 1;
 });
-

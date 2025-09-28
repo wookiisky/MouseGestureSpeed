@@ -6,7 +6,8 @@ import type {
   GestureActionPayload,
   GestureConfig,
   GestureTriggeredPayload,
-  RuntimeMessage
+  RuntimeMessage,
+  SuppressContextMenuPayload
 } from "../common/types.js";
 
 const logger = createLogger("BackgroundEntry");
@@ -70,6 +71,15 @@ onRuntimeMessage<RuntimeMessage<"gesture/action", GestureActionPayload>>("gestur
   const tabId = sender.tab?.id;
   logger.info(`Received gesture action ${action} from ${tabId !== undefined ? `tab ${tabId}` : "unknown tab"}`);
   await backgroundActionExecutor.execute(message.payload.action, sender);
+  // For actions that change the active tab, arm contextmenu suppression in new tab
+  if (action === "CLOSE_TAB" || action === "SWITCH_TAB_LEFT" || action === "SWITCH_TAB_RIGHT" || action === "REOPEN_CLOSED_TAB") {
+    const windowId = sender.tab?.windowId;
+    try {
+      await suppressContextMenuInWindow(windowId);
+    } catch (e) {
+      logger.warn("Failed to send suppress-contextmenu signal", e as unknown);
+    }
+  }
 });
 
 onRuntimeMessage<RuntimeMessage<"config/request", undefined>>("config/request", async (_message, sender) => {
@@ -192,6 +202,50 @@ const ensureContentActive = async (tabId: number) => {
   }
   logger.info(`Content not active in tab ${tabId}; attempting injection`);
   await injectContent(tabId);
+};
+
+// Sends a suppress-contextmenu signal to the active tab in a window.
+const suppressContextMenuInWindow = async (windowId?: number, windowMs: number = 0) => {
+  let tabs: chrome.tabs.Tab[] = [];
+  try {
+    tabs = await new Promise<chrome.tabs.Tab[]>((resolve, reject) => {
+      chrome.tabs.query({ active: true, windowId, currentWindow: windowId === undefined ? true : undefined }, (result) => {
+        const err = chrome.runtime.lastError;
+        if (err) {
+          reject(new Error(err.message));
+          return;
+        }
+        resolve(result);
+      });
+    });
+  } catch (e) {
+    logger.error("tabs.query failed when locating active tab for suppression", e);
+    return;
+  }
+  const target = tabs[0];
+  const targetId = target?.id;
+  if (targetId === undefined) {
+    logger.info("No active tab found to suppress contextmenu");
+    return;
+  }
+
+  try {
+    await ensureContentActive(targetId);
+  } catch (e) {
+    logger.warn("Failed to ensure content active before suppression", e as unknown);
+  }
+
+  const message: RuntimeMessage<"gesture/suppress-contextmenu", SuppressContextMenuPayload> = {
+    type: "gesture/suppress-contextmenu",
+    payload: { windowMs }
+  };
+
+  try {
+    await sendTabMessage(targetId, message);
+    logger.info(`Sent suppress-contextmenu to tab ${targetId}`);
+  } catch (e) {
+    logger.warn("Failed to post suppress-contextmenu to tab", e as unknown);
+  }
 };
 
 // Builds an origin pattern for host permission checks.
