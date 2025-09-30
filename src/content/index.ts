@@ -33,7 +33,7 @@ const tracker = createGestureTracker({
     await sendRuntimeMessage(message);
 
     if (match) {
-      await actionRouter.dispatch(match.action);
+      await actionRouter.dispatch(match.action, match.definition);
     }
   }
 });

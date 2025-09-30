@@ -70,7 +70,7 @@ onRuntimeMessage<RuntimeMessage<"gesture/action", GestureActionPayload>>("gestur
   const action = message.payload.action;
   const tabId = sender.tab?.id;
   logger.info(`Received gesture action ${action} from ${tabId !== undefined ? `tab ${tabId}` : "unknown tab"}`);
-  await backgroundActionExecutor.execute(message.payload.action, sender);
+  await backgroundActionExecutor.execute(message.payload.action, sender, message.payload);
   // For actions that change the active tab, arm contextmenu suppression in new tab
   if (action === "CLOSE_TAB" || action === "SWITCH_TAB_LEFT" || action === "SWITCH_TAB_RIGHT" || action === "REOPEN_CLOSED_TAB") {
     const windowId = sender.tab?.windowId;

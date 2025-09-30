@@ -376,6 +376,24 @@ const renderGestureEditor = () => {
   actionField.append(actionLabel, actionSelect);
   editor.appendChild(actionField);
 
+  // Additional parameters editor for specific actions
+  if (gesture.action === "OPEN_URL") {
+    const urlField = document.createElement("div");
+    urlField.className = "field";
+    const urlLabel = document.createElement("label");
+    urlLabel.textContent = "URL";
+    const urlInput = document.createElement("input");
+    urlInput.type = "url";
+    urlInput.placeholder = "https://example.com";
+    urlInput.value = gesture.url ?? "";
+    urlInput.addEventListener("change", () => {
+      const value = urlInput.value.trim();
+      updateSelectedGesture((current) => ({ ...current, url: value }));
+    });
+    urlField.append(urlLabel, urlInput);
+    editor.appendChild(urlField);
+  }
+
   elements.deleteGestureButton = document.createElement("button");
   elements.deleteGestureButton.className = "btn-danger";
   elements.deleteGestureButton.type = "button";

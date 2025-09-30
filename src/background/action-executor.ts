@@ -1,5 +1,5 @@
 import { createLogger } from "../common/log.js";
-import type { GestureAction } from "../common/types.js";
+import type { GestureAction, GestureActionPayload } from "../common/types.js";
 
 const logger = createLogger("BackgroundActionExecutor");
 
@@ -74,6 +74,23 @@ const activateTab = (tabId: number) =>
     });
   });
 
+// Opens a URL in a new tab (same window when possible).
+const openUrlInNewTab = (url: string, windowId?: number) =>
+  new Promise<void>((resolve, reject) => {
+    // Try to open the URL directly; Chrome will reject unsupported targets.
+    logger.info("Attempting to open URL", { url });
+    chrome.tabs.create({ url, windowId }, () => {
+      const lastError = chrome.runtime.lastError;
+      if (lastError) {
+        logger.error("tabs.create failed for OPEN_URL", lastError.message);
+        reject(new Error(lastError.message));
+        return;
+      }
+      logger.info("Opened URL in new tab", { url });
+      resolve();
+    });
+  });
+
 // Switches to adjacent tab if exists.
 const switchAdjacentTab = async (sender: chrome.runtime.MessageSender, direction: "left" | "right") => {
   const tabId = sender.tab?.id;
@@ -127,7 +144,7 @@ const switchAdjacentTab = async (sender: chrome.runtime.MessageSender, direction
 
 export class BackgroundActionExecutor {
   // Executes privileged action through background context.
-  async execute(action: GestureAction, sender: chrome.runtime.MessageSender) {
+  async execute(action: GestureAction, sender: chrome.runtime.MessageSender, payload?: GestureActionPayload) {
     switch (action) {
       case "CLOSE_TAB": {
         const tabId = sender.tab?.id;
@@ -163,6 +180,19 @@ export class BackgroundActionExecutor {
       }
       case "SWITCH_TAB_RIGHT": {
         await switchAdjacentTab(sender, "right");
+        break;
+      }
+      case "OPEN_URL": {
+        const url = payload?.url ?? "";
+        if (!url) {
+          logger.error("OPEN_URL missing url in payload");
+          return;
+        }
+        try {
+          await openUrlInNewTab(url, sender.tab?.windowId);
+        } catch (e) {
+          logger.error("Failed to open URL", e as unknown);
+        }
         break;
       }
       default: {

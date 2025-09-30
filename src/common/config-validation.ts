@@ -19,7 +19,8 @@ export const VALID_ACTIONS: GestureAction[] = [
   "REOPEN_CLOSED_TAB",
   "SWITCH_TAB_LEFT",
   "SWITCH_TAB_RIGHT",
-  "OPEN_OPTIONS_PAGE"
+  "OPEN_OPTIONS_PAGE",
+  "OPEN_URL"
 ];
 
 // Normalizes string directions to enums.
@@ -43,6 +44,26 @@ export const validateGestureDefinition = (gesture: GestureDefinition) => {
 
   if (!VALID_ACTIONS.includes(gesture.action)) {
     throw new Error(`Unsupported action ${gesture.action}`);
+  }
+
+  // Additional validation for actions requiring parameters
+  if (gesture.action === "OPEN_URL") {
+    const url = gesture.url ?? "";
+    if (typeof url !== "string" || url.trim().length === 0) {
+      throw new Error("OPEN_URL requires a non-empty url");
+    }
+    try {
+      // Ensure it is an absolute URL; allow internal schemes like chrome://
+      const parsed = new URL(url);
+      const protocol = parsed.protocol.toLowerCase();
+      // Disallow clearly unsafe schemes that Chrome will not open
+      const blocked = protocol === "javascript:" || protocol === "data:";
+      if (blocked) {
+        throw new Error("OPEN_URL disallows javascript/data URLs");
+      }
+    } catch (_e) {
+      throw new Error("OPEN_URL requires a valid absolute URL");
+    }
   }
 };
 

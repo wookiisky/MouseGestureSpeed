@@ -16,12 +16,15 @@ export type GestureAction =
   | "REOPEN_CLOSED_TAB"
   | "SWITCH_TAB_LEFT"
   | "SWITCH_TAB_RIGHT"
-  | "OPEN_OPTIONS_PAGE";
+  | "OPEN_OPTIONS_PAGE"
+  | "OPEN_URL";
 
 export interface GestureDefinition {
   id?: string;
   sequence: Direction[];
   action: GestureAction;
+  // Optional URL for OPEN_URL action
+  url?: string;
 }
 
 export interface GestureConfig {
@@ -54,6 +57,8 @@ export type GestureTriggeredPayload = {
 
 export type GestureActionPayload = {
   action: GestureAction;
+  // Optional URL when action is OPEN_URL
+  url?: string;
 };
 
 export type SuppressContextMenuPayload = {
