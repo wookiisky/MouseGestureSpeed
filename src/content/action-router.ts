@@ -21,11 +21,18 @@ const DOM_ACTIONS: Record<GestureAction, () => void> = {
   },
   SWITCH_TAB_RIGHT: () => {
     // Placeholder, handled by background.
+  },
+  OPEN_OPTIONS_PAGE: () => {
+    // Placeholder, handled by background.
   }
 };
 
 const isDomAction = (action: GestureAction) =>
-  action !== "CLOSE_TAB" && action !== "REOPEN_CLOSED_TAB" && action !== "SWITCH_TAB_LEFT" && action !== "SWITCH_TAB_RIGHT";
+  action !== "CLOSE_TAB" &&
+  action !== "REOPEN_CLOSED_TAB" &&
+  action !== "SWITCH_TAB_LEFT" &&
+  action !== "SWITCH_TAB_RIGHT" &&
+  action !== "OPEN_OPTIONS_PAGE";
 
 export class ActionRouter {
   // Routes action to DOM or background.

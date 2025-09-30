@@ -74,7 +74,7 @@ Schema (example):
 ```
 
 - Directions: `UP`, `DOWN`, `LEFT`, `RIGHT`, `LEFT_CLICK`
-- Actions: `NAVIGATE_BACK`, `NAVIGATE_FORWARD`, `SCROLL_TOP`, `SCROLL_BOTTOM`, `RELOAD`, `CLOSE_TAB`
+- Actions: `NAVIGATE_BACK`, `NAVIGATE_FORWARD`, `SCROLL_TOP`, `SCROLL_BOTTOM`, `RELOAD`, `CLOSE_TAB`, `OPEN_OPTIONS_PAGE`
 
 Note: Right-button hold is implicit for all gestures. Any `RIGHT_BUTTON` tokens in sequences are ignored and stripped during parsing/normalization.
 

@@ -3,6 +3,20 @@ import type { GestureAction } from "../common/types.js";
 
 const logger = createLogger("BackgroundActionExecutor");
 
+// Opens extension options page
+const openOptionsPage = () =>
+  new Promise<void>((resolve) => {
+    chrome.runtime.openOptionsPage(() => {
+      const lastError = chrome.runtime.lastError;
+      if (lastError) {
+        logger.error("Failed to open options page", lastError.message);
+      } else {
+        logger.info("Opened options page");
+      }
+      resolve();
+    });
+  });
+
 const removeTab = (tabId: number) =>
   new Promise<void>((resolve, reject) => {
     chrome.tabs.remove(tabId, () => {
@@ -128,6 +142,10 @@ export class BackgroundActionExecutor {
         } catch (error) {
           logger.error("Failed to close tab", error);
         }
+        break;
+      }
+      case "OPEN_OPTIONS_PAGE": {
+        await openOptionsPage();
         break;
       }
       case "REOPEN_CLOSED_TAB": {
