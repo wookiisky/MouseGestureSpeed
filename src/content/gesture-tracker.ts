@@ -1,5 +1,6 @@
 import { createLogger } from "../common/log.js";
-import type { Direction, GestureConfig } from "../common/types.js";
+import { sendRuntimeMessage } from "../common/messaging.js";
+import type { Direction, GestureConfig, RightMouseStatePayload } from "../common/types.js";
 
 const logger = createLogger("GestureTracker");
 
@@ -20,6 +21,7 @@ export class GestureTracker {
   private startTimestamp: number | null = null;
   private suppressNextContextMenu = false;
   private suppressUntil: number | null = null;
+  private assumedRightDown = false;
 
   // Creates tracker with callbacks.
   constructor(options: GestureTrackerOptions) {
@@ -82,6 +84,11 @@ export class GestureTracker {
     logger.info(
       `Right button pressed pid=${this.pointerId} at x=${event.clientX} y=${event.clientY}, tracking with minDuration=${this.delay}ms`
     );
+    // Notify background about right button state
+    const msg: RightMouseStatePayload = { down: true, ts: Date.now() };
+    void sendRuntimeMessage({ type: "rmb/state-update", payload: msg });
+    // Locally mark as down for potential chain usage
+    this.assumedRightDown = true;
   }
 
   private handlePointerMove(event: PointerEvent) {
@@ -125,6 +132,10 @@ export class GestureTracker {
 
     logger.info("Pointer released, completing gesture");
     this.completeGesture("pointer-up");
+    // Notify background about right button release
+    const msg: RightMouseStatePayload = { down: false, ts: Date.now() };
+    void sendRuntimeMessage({ type: "rmb/state-update", payload: msg });
+    this.assumedRightDown = false;
   }
 
   private handlePointerCancel(event: PointerEvent) {
@@ -134,6 +145,10 @@ export class GestureTracker {
 
     logger.info("Pointer cancelled, aborting gesture");
     this.resetState();
+    // Notify background about right button release (best effort)
+    const msg: RightMouseStatePayload = { down: false, ts: Date.now() };
+    void sendRuntimeMessage({ type: "rmb/state-update", payload: msg });
+    this.assumedRightDown = false;
   }
 
   private handleContextMenu(event: MouseEvent) {
@@ -161,14 +176,22 @@ export class GestureTracker {
   }
 
   private handleMouseDown(event: MouseEvent) {
-    if (!this.isTracking) {
-      return;
-    }
-
-    if (event.button === 0) {
+    // Handle left click while right-drag gesture is active
+    if (this.isTracking && event.button === 0) {
       this.sequence.push("LEFT_CLICK");
       logger.info("Left click captured during gesture");
       const triggered = this.completeGesture("left-click");
+      if (triggered) {
+        event.preventDefault();
+      }
+      return;
+    }
+
+    // Handle chain close: right button assumed down across tabs
+    if (!this.isTracking && this.assumedRightDown && event.button === 0) {
+      this.sequence = ["LEFT_CLICK"];
+      logger.info("Chain left click captured with assumed RMB down");
+      const triggered = this.completeGesture("left-click-chain", { bypassDuration: true });
       if (triggered) {
         event.preventDefault();
       }
@@ -186,7 +209,8 @@ export class GestureTracker {
     );
   }
 
-  private completeGesture(reason: string): boolean {
+  // Completes gesture and dispatches sequence
+  private completeGesture(reason: string, opts?: { bypassDuration?: boolean }): boolean {
     const duration = this.startTimestamp ? Date.now() - this.startTimestamp : 0;
 
     if (this.sequence.length === 0) {
@@ -195,7 +219,7 @@ export class GestureTracker {
       return false;
     }
 
-    if (duration < this.delay) {
+    if (!opts?.bypassDuration && duration < this.delay) {
       logger.info(`Gesture discarded due to short duration=${duration}ms < min=${this.delay}ms`);
       this.resetState();
       return false;
@@ -237,6 +261,12 @@ export class GestureTracker {
     logger.info(
       `Armed context menu suppression${windowMs > 0 ? ` with window=${windowMs}ms` : ""}`
     );
+  }
+
+  // Updates assumed right button state (for cross-tab chaining)
+  setAssumedRightDown(state: boolean) {
+    this.assumedRightDown = state;
+    logger.info(`Assumed RMB state updated to ${state}`);
   }
 }
 

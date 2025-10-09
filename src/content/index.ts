@@ -9,7 +9,8 @@ import type {
   GestureConfig,
   GestureTriggeredPayload,
   RuntimeMessage,
-  SuppressContextMenuPayload
+  SuppressContextMenuPayload,
+  RightMouseStateCurrentPayload
 } from "../common/types.js";
 
 const logger = createLogger("ContentEntry");
@@ -45,6 +46,8 @@ const bootstrap = async () => {
     applyConfig(config);
     tracker.start();
     logger.info("Content script bootstrapped");
+    // Query initial RMB state to support chain close across tabs
+    await sendRuntimeMessage({ type: "rmb/state-request", payload: undefined });
   } catch (error) {
     logger.error("Failed to initialize content script", error);
   }
@@ -67,6 +70,15 @@ onRuntimeMessage<RuntimeMessage<"gesture/suppress-contextmenu", SuppressContextM
     const windowMs = message.payload?.windowMs ?? 0;
     logger.info(`Received suppress-contextmenu signal windowMs=${windowMs}`);
     tracker.armContextMenuSuppression(windowMs);
+  }
+);
+
+onRuntimeMessage<RuntimeMessage<"rmb/state-current", RightMouseStateCurrentPayload>>(
+  "rmb/state-current",
+  (message) => {
+    const down = message.payload.down;
+    logger.info(`Received RMB state: down=${down}`);
+    tracker.setAssumedRightDown(Boolean(down));
   }
 );
 

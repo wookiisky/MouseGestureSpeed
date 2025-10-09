@@ -7,10 +7,16 @@ import type {
   GestureConfig,
   GestureTriggeredPayload,
   RuntimeMessage,
-  SuppressContextMenuPayload
+  SuppressContextMenuPayload,
+  RightMouseStatePayload,
+  RightMouseStateCurrentPayload
 } from "../common/types.js";
 
 const logger = createLogger("BackgroundEntry");
+
+// Tracks global right mouse button state across tabs
+let rightMouseDown = false;
+let rightMouseUpdatedAt = 0;
 
 // Sends runtime message to a tab.
 const sendTabMessage = (tabId: number, message: RuntimeMessage) =>
@@ -94,6 +100,34 @@ onRuntimeMessage<RuntimeMessage<"config/request", undefined>>("config/request", 
 
 onRuntimeMessage<RuntimeMessage<"gesture/triggered", GestureTriggeredPayload>>("gesture/triggered", async (message) => {
   logger.info("Gesture telemetry", message.payload);
+});
+
+// Updates right mouse button state
+onRuntimeMessage<RuntimeMessage<"rmb/state-update", RightMouseStatePayload>>("rmb/state-update", async (message, sender) => {
+  rightMouseDown = Boolean(message.payload.down);
+  rightMouseUpdatedAt = Date.now();
+  const tabId = sender.tab?.id;
+  logger.info(`RMB state updated to ${rightMouseDown} from ${tabId !== undefined ? `tab ${tabId}` : "unknown"}`);
+});
+
+// Responds with current RMB state
+onRuntimeMessage<RuntimeMessage<"rmb/state-request", undefined>>("rmb/state-request", async (_message, sender) => {
+  const tabId = sender.tab?.id;
+  if (tabId === undefined) {
+    logger.warn("RMB state request without tab context");
+    return;
+  }
+  const payload: RightMouseStateCurrentPayload = { down: rightMouseDown };
+  const msg: RuntimeMessage<"rmb/state-current", RightMouseStateCurrentPayload> = {
+    type: "rmb/state-current",
+    payload
+  };
+  try {
+    await sendTabMessage(tabId, msg);
+    logger.info(`Sent RMB state to tab ${tabId}: down=${payload.down}`);
+  } catch (e) {
+    logger.warn("Failed to send RMB state to tab", e as unknown);
+  }
 });
 
 chrome.runtime.onInstalled.addListener(() => {

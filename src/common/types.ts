@@ -39,7 +39,10 @@ export type RuntimeMessageType =
   | "config/updated"
   | "gesture/triggered"
   | "gesture/action"
-  | "gesture/suppress-contextmenu";
+  | "gesture/suppress-contextmenu"
+  | "rmb/state-update"
+  | "rmb/state-request"
+  | "rmb/state-current";
 
 export interface RuntimeMessage<T extends RuntimeMessageType = RuntimeMessageType, P = unknown> {
   type: T;
@@ -64,6 +67,18 @@ export type GestureActionPayload = {
 export type SuppressContextMenuPayload = {
   // Optional suppression window in ms (informational only)
   windowMs?: number;
+};
+
+// Payload for right mouse button state updates
+export type RightMouseStatePayload = {
+  down: boolean;
+  // Optional timestamp for debugging
+  ts?: number;
+};
+
+// Payload for right mouse button current state
+export type RightMouseStateCurrentPayload = {
+  down: boolean;
 };
 
 export type Subscriber<T> = (value: T) => void;
