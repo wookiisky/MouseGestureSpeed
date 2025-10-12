@@ -120,35 +120,45 @@ export class GestureTracker {
   }
 
   private handlePointerUp(event: PointerEvent) {
-    if (event.pointerId !== this.pointerId) {
+    const isRightRelease = event.button === 2;
+    const pointerMatches = event.pointerId === this.pointerId;
+
+    if (!pointerMatches) {
+      if (isRightRelease) {
+        logger.info("Pointer up received after state reset; syncing RMB release");
+        this.syncRightButtonRelease("pointer-up-untracked");
+      }
       return;
     }
 
     if (!this.isTracking) {
       logger.info("Gesture cancelled before activation");
       this.resetState();
+      if (isRightRelease) {
+        this.syncRightButtonRelease("pointer-up-cancelled");
+      }
       return;
     }
 
     logger.info("Pointer released, completing gesture");
     this.completeGesture("pointer-up");
-    // Notify background about right button release
-    const msg: RightMouseStatePayload = { down: false, ts: Date.now() };
-    void sendRuntimeMessage({ type: "rmb/state-update", payload: msg });
-    this.assumedRightDown = false;
+    if (isRightRelease) {
+      this.syncRightButtonRelease("pointer-up");
+    }
   }
 
   private handlePointerCancel(event: PointerEvent) {
     if (event.pointerId !== this.pointerId) {
+      if (this.assumedRightDown) {
+        logger.info("Pointer cancel received after state reset; syncing RMB release");
+        this.syncRightButtonRelease("pointer-cancel-untracked");
+      }
       return;
     }
 
     logger.info("Pointer cancelled, aborting gesture");
     this.resetState();
-    // Notify background about right button release (best effort)
-    const msg: RightMouseStatePayload = { down: false, ts: Date.now() };
-    void sendRuntimeMessage({ type: "rmb/state-update", payload: msg });
-    this.assumedRightDown = false;
+    this.syncRightButtonRelease("pointer-cancel");
   }
 
   private handleContextMenu(event: MouseEvent) {
@@ -185,16 +195,6 @@ export class GestureTracker {
         event.preventDefault();
       }
       return;
-    }
-
-    // Handle chain close: right button assumed down across tabs
-    if (!this.isTracking && this.assumedRightDown && event.button === 0) {
-      this.sequence = ["LEFT_CLICK"];
-      logger.info("Chain left click captured with assumed RMB down");
-      const triggered = this.completeGesture("left-click-chain", { bypassDuration: true });
-      if (triggered) {
-        event.preventDefault();
-      }
     }
   }
 
@@ -267,6 +267,17 @@ export class GestureTracker {
   setAssumedRightDown(state: boolean) {
     this.assumedRightDown = state;
     logger.info(`Assumed RMB state updated to ${state}`);
+  }
+
+  // Syncs right button release with background channel.
+  private syncRightButtonRelease(reason: string) {
+    if (!this.assumedRightDown) {
+      return;
+    }
+    logger.info(`Syncing RMB release due to ${reason}`);
+    const msg: RightMouseStatePayload = { down: false, ts: Date.now() };
+    void sendRuntimeMessage({ type: "rmb/state-update", payload: msg });
+    this.assumedRightDown = false;
   }
 }
 
