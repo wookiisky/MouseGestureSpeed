@@ -17,6 +17,8 @@ const logger = createLogger("BackgroundEntry");
 // Tracks global right mouse button state across tabs
 let rightMouseDown = false;
 let rightMouseUpdatedAt = 0;
+// Maximum duration to consider RMB state valid (ms)
+const RMB_STATE_TTL_MS = 1500;
 
 // Sends runtime message to a tab.
 const sendTabMessage = (tabId: number, message: RuntimeMessage) =>
@@ -77,6 +79,14 @@ onRuntimeMessage<RuntimeMessage<"gesture/action", GestureActionPayload>>("gestur
   const tabId = sender.tab?.id;
   logger.info(`Received gesture action ${action} from ${tabId !== undefined ? `tab ${tabId}` : "unknown tab"}`);
   await backgroundActionExecutor.execute(message.payload.action, sender, message.payload);
+  // Reset assumed RMB state after destructive tab actions to avoid stale carryover
+  if (action === "CLOSE_TAB") {
+    if (rightMouseDown) {
+      rightMouseDown = false;
+      rightMouseUpdatedAt = Date.now();
+      logger.info("RMB state cleared after CLOSE_TAB action to avoid stale carryover");
+    }
+  }
   // For actions that change the active tab, arm contextmenu suppression in new tab
   if (action === "CLOSE_TAB" || action === "SWITCH_TAB_LEFT" || action === "SWITCH_TAB_RIGHT" || action === "REOPEN_CLOSED_TAB") {
     const windowId = sender.tab?.windowId;
@@ -117,7 +127,13 @@ onRuntimeMessage<RuntimeMessage<"rmb/state-request", undefined>>("rmb/state-requ
     logger.warn("RMB state request without tab context");
     return;
   }
-  const payload: RightMouseStateCurrentPayload = { down: rightMouseDown };
+  // Apply TTL to avoid stale RMB state after tab closures or navigation
+  const age = Date.now() - rightMouseUpdatedAt;
+  const effectiveDown = rightMouseDown && age <= RMB_STATE_TTL_MS;
+  if (rightMouseDown && !effectiveDown) {
+    logger.info(`RMB state expired due to TTL age=${age}ms > ttl=${RMB_STATE_TTL_MS}ms`);
+  }
+  const payload: RightMouseStateCurrentPayload = { down: effectiveDown };
   const msg: RuntimeMessage<"rmb/state-current", RightMouseStateCurrentPayload> = {
     type: "rmb/state-current",
     payload

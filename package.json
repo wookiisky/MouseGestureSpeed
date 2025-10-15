@@ -1,6 +1,6 @@
 {
   "name": "mouse-gesture-speed",
-  "version": "0.2.1",
+  "version": "1.0.0",
   "private": true,
   "description": "Chrome mouse gesture extension with configurable actions.",
   "scripts": {
